@@ -1,10 +1,10 @@
 {
-  "name": "korockle",
+  "name": "mame_korockle_lib",
   "version": "0.0.0",
   "description": "",
-  "license": "ISC",
+  "license": "MIT",
   "author": "",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "tsc&node dist/index.js"
@@ -12,10 +12,5 @@
   "dependencies": {
     "node-hid": "^3.2.0",
     "ws": "^8.18.3"
-  },
-  "devDependencies": {
-    "@types/node": "^24.0.13",
-    "@types/ws": "^8.18.1",
-    "@types/jquery": "^3.5.32"
   }
 }
