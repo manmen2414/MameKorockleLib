@@ -2,3 +2,5 @@ node_modules/
 package-lock.json
 output.js/
 node_dist/
+desktop.ini
+testcode.js
