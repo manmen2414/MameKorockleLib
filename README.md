@@ -18,7 +18,7 @@ import * as korockleLib from "./main/node.js";
 <script src="YOUR_SCRIPT.js" type="module"></script>
 ```
 ```js
-import * as korockleLib from "./main/node.js";
+import * as korockleLib from "./main/web.js";
 ```
 
 ## 現在完成:

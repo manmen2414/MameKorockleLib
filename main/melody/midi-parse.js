@@ -1,4 +1,3 @@
-import * as fs from "fs";
 import { NOTE_LENGTHS, NOTE_SCALES } from "./melody.js";
 import { MelodyBuilder } from "./builder.js";
 class MidiMelodyBuilder extends MelodyBuilder {
@@ -97,20 +96,26 @@ class MidiMelodyBuilder extends MelodyBuilder {
  */
 function parseMidi(filebase64, track = 0, ifNoPackage = "throw") {
   return new Promise((r, j) => {
+    function libgot(lib) {
+      const data = lib.parse(filebase64);
+      r(new MidiMelodyBuilder(data, track));
+    }
+    function nogot() {
+      switch (ifNoPackage) {
+        case "melody":
+          r(new MelodyBuilder(120, false));
+        case "null":
+          r(null);
+        default:
+          j(new Error('Module "midi-parser-js" not installed'));
+      }
+    }
     import("midi-parser-js").then(
-      (v) => {
-        const data = v.default.parse(filebase64);
-        r(new MidiMelodyBuilder(data, track));
-      },
+      (v) => libgot(v.default),
       (c) => {
-        switch (ifNoPackage) {
-          case "melody":
-            return new MelodyBuilder(120, false);
-          case "null":
-            return null;
-          default:
-            throw new Error('Module "midi-parser-js" not installed');
-        }
+        if (typeof window === "object" && !!window.MidiParser) {
+          libgot(window.MidiParser);
+        } else nogot();
       }
     );
   });
