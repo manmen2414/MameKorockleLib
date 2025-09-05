@@ -24,7 +24,7 @@ const ConstColorColor = {
   BLUE: [0, 0, 10],
   YELLOW: [10, 10, 0],
   PURPLE: [10, 0, 10],
-  CYAN: [10, 10, 0],
+  CYAN: [0, 10, 10],
   WHITE: [10, 10, 10],
 };
 /**@param {number} val  */
@@ -76,7 +76,7 @@ class Color {
     const colorName = colorsFinded[0];
     return new Color(...Util.findIndex(ConstColorColor, colorName));
   }
-  /**@returns {number} */
+  /**@returns {number} 定数でない色は0を返す。 */
   constColor() {
     const rgb = [this.red, this.green, this.blue];
     const constColor = Object.entries(ConstColorColor).find((kv) =>
@@ -88,5 +88,9 @@ class Color {
   toString() {
     return `${this.red},${this.green},${this.blue}`;
   }
+  isNone() {
+    return this.red === 0 && this.blue === 0 && this.green === 0;
+  }
+  static NONE = new Color(0, 0, 0);
 }
 export { Color, ConstColor };

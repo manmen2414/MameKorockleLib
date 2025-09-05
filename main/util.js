@@ -16,7 +16,7 @@ function checkUint8(value) {
  */
 function toUint8(value) {
   while (value < 0) {
-    value -= value;
+    value = 256 + value;
   }
   const testvalue = Math.floor(value) % 256;
   if (!checkUint8(testvalue)) return 0;
@@ -59,6 +59,21 @@ function convertToDeviceEndian(value) {
   new Uint16Array(buffer, 0, 1)[0] = value;
   return Array.from(new Uint8Array(buffer, 0, 2).reverse());
 }
+
+/**
+ * @template T
+ * @param {T[]} array
+ * @param {T} item
+ * @param {boolean} isnotExistThrow
+ * @returns {number}
+ */
+function indexOf(array, item, isnotExistThrow = true) {
+  const n = array.indexOf(item);
+  if (isnotExistThrow && n === -1)
+    throw new Error(`${item} isn't exist in ${array.join(",")}`);
+  return n;
+}
+
 export {
   checkUint8,
   toUint8,
@@ -66,4 +81,5 @@ export {
   isHidUseable,
   dataViewToArray,
   convertToDeviceEndian,
+  indexOf,
 };
