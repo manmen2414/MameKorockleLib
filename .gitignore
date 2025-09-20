@@ -3,4 +3,7 @@ package-lock.json
 output.js/
 node_dist/
 desktop.ini
-testcode.js
+testcode*
+
+# botとかサーバーのことを考えアップロードしたらまずい可能性があるので
+web_network_client/

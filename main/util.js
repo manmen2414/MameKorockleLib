@@ -36,6 +36,7 @@ function findIndex(object, key) {
  * @returns {number[]}
  */
 function dataViewToArray(dataView) {
+  /**@type {number[]} */
   const data = [];
   function getData(index = 0) {
     data.push(dataView.getUint8(index));
