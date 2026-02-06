@@ -11,12 +11,12 @@ const THREE0 = [0, 0, 0];
 class Korockle {
   /**@type {HIDDevice | null} */
   hid = null;
-  /**@type {number[] } */
-  __data = [];
   /**@type {number} */
   commandSequenceNumber = 0;
-  /**@type {number} */
-  __dataRemoveTimeout = 0;
+  /**@type {number[][]} */
+  __data = [];
+  /**@type {EventTarget} */
+  __event;
   /**@param {HIDDevice} hid  */
   constructor(hid) {
     this.hid = hid;
@@ -24,6 +24,7 @@ class Korockle {
       //@ts-ignore
       this.__inputreport(event);
     });
+    this.__event = new EventTarget();
   }
   static async get() {
     const kHid = await getKorockle();
@@ -44,7 +45,7 @@ class Korockle {
   async writeProgram(program) {
     await this.sendCommand(
       COMMANDID.writeProgram,
-      util.convertToDeviceEndian(program.length)
+      util.convertToDeviceEndian(program.length),
     );
     const longData = new LongDataWriter(this, program);
     return await longData.send();
@@ -53,7 +54,7 @@ class Korockle {
   async writeMelody(melody) {
     await this.sendCommand(
       COMMANDID.writeMelody,
-      util.convertToDeviceEndian(melody.length)
+      util.convertToDeviceEndian(melody.length),
     );
     const longData = new LongDataWriter(this, melody);
     return await longData.send();
@@ -72,18 +73,19 @@ class Korockle {
     }
     return this.hid.sendReport(
       webAudio,
-      Uint8Array.from([reportId, commandId, ...data])
+      Uint8Array.from([reportId, commandId, ...data]),
     );
   }
   /**
    * @param {number} commandId
    * @param {number[]} data
+   * @param {boolean} exceptLongData
    */
-  async sendCommand(commandId, data = []) {
+  async sendCommand(commandId, data = [], exceptLongData = false) {
     this.commandSequenceNumber = toUint8(this.commandSequenceNumber + 1);
+    const read = this.readData(this.commandSequenceNumber, exceptLongData);
     await this.sendData(commandId, this.commandSequenceNumber, data);
-    const read = await this.readData();
-    return read;
+    return await read;
   }
   async getInfoRaw() {
     if (!this.hid) throw new Error("HID not readied");
@@ -190,7 +192,7 @@ class Korockle {
           this.setTime(date);
           clearInterval(id);
         }
-      }, 100);
+      }, 50);
     } else {
       await this.setTime(new Date());
     }
@@ -201,34 +203,56 @@ class Korockle {
     if (event.device.productId !== this.hid.productId) return;
     if (event.device.vendorId !== this.hid.vendorId) return;
 
-    this.__data = util.dataViewToArray(event.data);
-    //@ts-ignore
-    this.__dataRemoveTimeout = setTimeout(() => {
-      this.__data = [];
-    }, 500);
+    this.__data.push(util.dataViewToArray(event.data));
+    if (this.__data.length > 20) this.__data.shift();
+    this.__event.dispatchEvent(new Event("data"));
   }
   /**
+   * @param {boolean} isLong
+   * @param {number} sequenceId
+   * @param {number} timeout
    * @returns {Promise<number[]>}
    */
-  readData() {
-    return new Promise((r, j) => {
-      let count = 0;
-      const id = setInterval(() => {
-        if (this.__data.length !== 0) {
-          const data = [...this.__data];
-          this.__data.length = 0;
-          clearTimeout(this.__dataRemoveTimeout);
-          r(data);
-          clearInterval(id);
-          return;
+  readData(sequenceId, isLong = false, timeout = 2000) {
+    let listener = () => {};
+    /**@type {Promise<number[]>} */
+    const reader = Promise.race([
+      new Promise((r) => {
+        if (!isLong)
+          listener = () => {
+            const last = this.__data[this.__data.length - 1];
+            if (last[1] === sequenceId) r(last);
+          };
+        else {
+          /**@type {number[]} */
+          const ret = [];
+          let segmentCount = 0;
+          listener = () => {
+            const last = this.__data[this.__data.length - 1];
+            if (last[0] === COMMANDID.dataSegment) {
+              ret.push(...last.slice(2));
+              segmentCount++;
+              if (last[1] > 0x7f)
+                // データ終了時に、コロックルの想定している個数にデータを切り抜く
+                r(ret.slice(0, (segmentCount - 1) * 62 + (last[1] & 0x7f) + 2));
+            } else if (
+              last[0] === 240 &&
+              ret.length === 0 &&
+              last[1] === sequenceId
+            ) {
+              const dataLength = last[2];
+              ret.push(last[0], dataLength);
+            }
+          };
         }
-        count++;
-        if (count > 300) {
-          clearInterval(id);
-          r([]);
-        }
-      }, 10);
-    });
+        this.__event.addEventListener("data", listener);
+      }),
+      new Promise((r, j) =>
+        setTimeout(() => j(new Error("Data Timeouted")), timeout),
+      ),
+    ]);
+    reader.finally(() => this.__event.removeEventListener("data", listener));
+    return reader;
   }
 }
 export { Korockle };

@@ -17,6 +17,7 @@ class NodeHidDevice extends EventTarget {
     this.productId = device.productId;
     this.productName = device.product;
     this.vendorId = device.vendorId;
+    this.path = device.path;
     this._device = device;
   }
   /**@type {nodeHid.HIDAsync?} */
@@ -33,12 +34,17 @@ class NodeHidDevice extends EventTarget {
     return this.close();
   }
   async open() {
-    const hid = await nodeHid.HIDAsync.open(this.vendorId, this.productId);
+    const hid = !this.path
+      ? await nodeHid.HIDAsync.open(this.vendorId, this.productId)
+      : await nodeHid.HIDAsync.open(this.path);
     this._hid = hid;
     this.opened = true;
-    hid.on("data", (buff) => {
-      this.dispatchEvent(new NodeHIDInputReportEvent(this, buff));
-    });
+    hid.on(
+      "data",
+      /**@param {Buffer} buff*/ (buff) => {
+        this.dispatchEvent(new NodeHIDInputReportEvent(this, buff));
+      },
+    );
     return hid;
   }
   /**
@@ -93,13 +99,12 @@ navigator.hid = {
    * @returns {Promise<HIDDevice[]>}
    */
   async requestDevice(options) {
-    //TODO: 複数に対応(必要？)
     const devices = await this.getDevices();
     const filter = options.filters[0];
     return devices.filter(
       (v) =>
         v.vendorId === (filter.vendorId ?? v.vendorId) &&
-        v.productId === (filter.productId ?? v.productId)
+        v.productId === (filter.productId ?? v.productId),
     );
   },
 };
