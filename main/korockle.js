@@ -93,6 +93,22 @@ class Korockle {
     if (!data) return null;
     return data.slice(2);
   }
+  async readProgram() {
+    if (!this.hid) throw new Error("HID not readied");
+    const data = await this.sendCommand(COMMANDID.readProgram, [], true).catch(
+      () => null,
+    );
+    if (!data) return null;
+    return data.slice(2);
+  }
+  async readMelody() {
+    if (!this.hid) throw new Error("HID not readied");
+    const data = await this.sendCommand(COMMANDID.readMelody, [], true).catch(
+      () => null,
+    );
+    if (!data) return null;
+    return data.slice(2);
+  }
   async getInfo() {
     const data = await this.getInfoRaw();
     if (!data) return null;
