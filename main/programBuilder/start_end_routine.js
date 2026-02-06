@@ -22,6 +22,10 @@ class End extends BaseBlock {
   build() {
     return [2];
   }
+  /**
+   * @type {typeof BaseBlock.prototype.setTo}
+   * @deprecated
+   */
   setTo(block) {
     throw new Error("End Block cannot have next block.");
     return block;

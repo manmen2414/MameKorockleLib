@@ -1,7 +1,14 @@
 //@ts-check
+/// <reference path="pb.d.ts" />
 import { indexOf } from "../util.js";
 import { BaseBlock, variableToIndex } from "./base.js";
 
+/**
+ *
+ * @param {BaseBlock} block
+ * @param {BaseBlock} target
+ * @param {BaseBlock[]} ignore
+ */
 const solveBranch = (block, target, ignore = []) => {
   if (target.to.length === 0) target.setTo(block);
   else
@@ -66,47 +73,80 @@ class IfBlock extends BaseBlock {
   static Input(setting) {
     return new this("Input", setting);
   }
-  /** @returns {s is IfArgments.Button}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Button}
+   */
   isConditionButton(s) {
     return this.condition === "Button";
   }
-  /** @returns {s is IfArgments.Light}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Light}
+   */
   isConditionLight(s) {
     return this.condition === "Light";
   }
-  /** @returns {s is IfArgments.Sound}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Sound}
+   */
   isConditionSound(s) {
     return this.condition === "Sound";
   }
-  /** @returns {s is IfArgments.Alerm}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Alerm}
+   */
   isConditionAlerm(s) {
     return this.condition === "Alerm";
   }
-  /** @returns {s is IfArgments.Timer}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Timer}
+   */
   isConditionTimer(s) {
     return this.condition === "Timer";
   }
-  /** @returns {s is IfArgments.Time}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Time}
+   */
   isConditionTime(s) {
     return this.condition === "Time";
   }
-  /** @returns {s is IfArgments.Temperature}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Temperature}
+   */
   isConditionTemperature(s) {
     return this.condition === "Temperature";
   }
-  /** @returns {s is IfArgments.Random}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Random}
+   */
   isConditionRandom(s) {
     return this.condition === "Random";
   }
-  /** @returns {s is IfArgments.Counter}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Counter}
+   */
   isConditionCounter(s) {
     return this.condition === "Counter";
   }
-  /** @returns {s is IfArgments.Variable}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Variable}
+   */
   isConditionVariable(s) {
     return this.condition === "Variable";
   }
-  /** @returns {s is IfArgments.Input}*/
+  /**
+   * @param {IfArgments.All} s
+   * @returns {s is IfArgments.Input}
+   */
   isConditionInput(s) {
     return this.condition === "Input";
   }
@@ -222,8 +262,7 @@ class IfBlock extends BaseBlock {
    * thenとelseの先のブロックを設定します。返り値は引数のblockです。
    * thenとelseのブロックがない場合指定したブロックをその場合のブロックとします。
    * ifなどで道が分かれている場合その道全ての先を指定ブロックとします。
-   * @template T
-   * @param {T} block
+   * @type {typeof BaseBlock.prototype.setTo}
    */
   setTo(block) {
     /*if (!!this.to[0]) solveBranch(block, this.to[0], [this]);

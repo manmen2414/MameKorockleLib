@@ -12,7 +12,7 @@ class BaseBlock {
   build() {}
   /**
    * ブロックの次のブロックを設定します。返り値は次のブロックです。
-   * @template T
+   * @template {BaseBlock} T
    * @returns {T}
    * @param {T} block
    */
