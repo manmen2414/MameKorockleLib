@@ -4,7 +4,6 @@
   "description": "",
   "license": "MIT",
   "author": "",
-  "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "node main/testcode.js"
@@ -14,6 +13,8 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "midi-parser-js": "^4.0.4"
+    "midi-parser-js": "^4.0.4",
+    "webpack": "^5.105.1",
+    "webpack-cli": "^6.0.1"
   }
 }
