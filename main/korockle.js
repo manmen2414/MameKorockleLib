@@ -146,6 +146,9 @@ class Korockle {
   async getLightValue() {
     return (await this.sendCommand(COMMANDID.getLight))[2];
   }
+  async getRunningProgramByteIndex() {
+    return (await this.sendCommand(COMMANDID.getRunningProgramByteIndex))[2];
+  }
   /**
    * @param {"once" | "loop" | "stop"} type
    * @param {number} index
