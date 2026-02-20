@@ -143,6 +143,9 @@ class Korockle {
   async getVersion() {
     return (await this.sendCommand(COMMANDID.getVersion))[2];
   }
+  async getLightValue() {
+    return (await this.sendCommand(COMMANDID.getLight))[2];
+  }
   /**
    * @param {"once" | "loop" | "stop"} type
    * @param {number} index
