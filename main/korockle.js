@@ -140,6 +140,9 @@ class Korockle {
     const value = power === 0 ? 140 : 138;
     await this.sendCommand(COMMANDID.action, [value, 0, power]);
   }
+  async getVersion() {
+    return (await this.sendCommand(COMMANDID.getVersion))[2];
+  }
   /**
    * @param {"once" | "loop" | "stop"} type
    * @param {number} index

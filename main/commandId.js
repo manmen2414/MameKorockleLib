@@ -12,6 +12,7 @@ const COMMANDID = {
   getRunningProgramByteIndex: 118,
   getInfo: 119,
   action: 120,
+  getVersion: 121,
   dataSegment: 208,
 };
 export { COMMANDID };
