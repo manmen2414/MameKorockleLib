@@ -134,6 +134,13 @@ class Korockle {
     await this.sendCommand(COMMANDID.action, [35 + id, 0]);
   }
   /**
+   * @param {number} power 0でoff
+   */
+  async usb(power) {
+    const value = power === 0 ? 140 : 138;
+    await this.sendCommand(COMMANDID.action, [value, 0, power]);
+  }
+  /**
    * @param {"once" | "loop" | "stop"} type
    * @param {number} index
    */

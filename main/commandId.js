@@ -9,6 +9,7 @@ const COMMANDID = {
   updateFirmware: 114,
   playMelody: 115,
   stopMeloay: 116,
+  getRunningProgramByteIndex: 118,
   getInfo: 119,
   action: 120,
   dataSegment: 208,
