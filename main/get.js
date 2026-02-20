@@ -1,7 +1,17 @@
-async function getKorockle() {
-  /**@type {HID} navigator.hidなんてあるよ うるせぇよ 黙れよ navigator.hidなんてあるよ node.js:85こそが正義 navigator.hidなんて あるよ 正しいのは俺*/
+/**
+ * @overload
+ * @param {number} [index=0] [Nodeのみ] 該当インデックスのコロックルを返す。
+ * @returns {Promise<HIDDevice>}
+ */
+/**
+ * @overload
+ * @param {"all"} index 全てのコロックルを返す。
+ * @returns {Promise<HIDDevice[]>}
+ */
+async function getKorockle(index = 0) {
   const hid = navigator.hid;
-  const [korockle] = await hid.requestDevice({
+  /**@type {HIDDevice[]} */
+  const korockles = await hid.requestDevice({
     filters: [
       {
         vendorId: 3141,
@@ -9,7 +19,11 @@ async function getKorockle() {
       },
     ],
   });
-  await korockle.open();
-  return korockle;
+  if (index === "all") {
+    await Promise.all(korockles.map((k) => k.open()));
+    return korockles;
+  }
+  await korockles[index].open();
+  return korockles[index];
 }
 export { getKorockle };
