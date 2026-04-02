@@ -87,7 +87,8 @@ class NodeHIDInputReportEvent extends Event {
   }
 }
 
-navigator.hid = {
+globalThis.navigator ??= {};
+globalThis.navigator.hid = {
   /**
    * @returns {Promise<HIDDevice[]>}
    */
