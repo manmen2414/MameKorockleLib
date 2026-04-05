@@ -7,6 +7,9 @@ const BPMS = {
   180: 4,
 };
 class Melody {
+  /**
+   * @param {number} bpmIndex
+   */
   constructor(bpmIndex, isLEDLinked = false) {
     if (0 > bpmIndex || 4 < bpmIndex || bpmIndex % 1 !== 0)
       throw new RangeError(`${bpmIndex} is not vaild bpm.`);
