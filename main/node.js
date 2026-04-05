@@ -115,4 +115,4 @@ export * from "./korockle.js";
 export * from "./longdataWriter.js";
 export * from "./util.js";
 export * from "./programBuilder/color.js";
-export * from "./melody/";
+export * from "./melody/index.js";
