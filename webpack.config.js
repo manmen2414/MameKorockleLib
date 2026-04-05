@@ -26,7 +26,7 @@ const genConfig = (webOrNode) => ({
 
 const webConfig = {
   ...genConfig("web"),
-  externals: ["midi-parser-js"],
+  externals: ["midi-parser-js", "fast-xml-parser"],
 };
 
 const nodeConfig = genConfig("node");
