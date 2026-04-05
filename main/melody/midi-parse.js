@@ -127,11 +127,11 @@ function parseMidi(filebase64, track = 0, ifNoPackage = "throw") {
       }
       throw null;
     }
-    async function checkNoteLib() {
+    async function checkNodeLib() {
       const lib = await import("midi-parser-js");
       return lib.default;
     }
-    checkWebLib().then(libgot).catch(checkNoteLib).then(libgot).catch(nogot);
+    checkWebLib().then(libgot).catch(checkNodeLib).then(libgot).catch(nogot);
   });
 }
 
