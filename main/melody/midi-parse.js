@@ -53,7 +53,7 @@ class MidiMelodyBuilder extends MelodyBuilder {
         this._log(`[${i}]休み 開始: 0`);
         this.addNoteV(
           NOTE_SCALES.REST,
-          this.transDeltaTimeToKorockleTime(note.deltaTime)
+          this.transDeltaTimeToKorockleTime(note.deltaTime),
         );
         this._log(`[${i}]休み 終了: ${note.deltaTime}`);
       }
@@ -75,7 +75,7 @@ class MidiMelodyBuilder extends MelodyBuilder {
         }
         this.addNoteV(
           noteLevel,
-          this.transDeltaTimeToKorockleTime(sounding.elapseTime)
+          this.transDeltaTimeToKorockleTime(sounding.elapseTime),
         );
         soundingNote = soundingNote.filter((v) => v !== sounding);
       }
@@ -104,27 +104,34 @@ class MidiMelodyBuilder extends MelodyBuilder {
 function parseMidi(filebase64, track = 0, ifNoPackage = "throw") {
   return new Promise((r, j) => {
     function libgot(lib) {
-      const data = lib.parse(filebase64);
-      r(new MidiMelodyBuilder(data, track));
+      if (!lib) return void nogot();
+      try {
+        const data = lib.parse(filebase64);
+        if (!data) j(new Error("Module solve failed"));
+        r(new MidiMelodyBuilder(data, track));
+      } catch (_) {}
     }
     function nogot() {
       switch (ifNoPackage) {
         case "melody":
-          r(new MelodyBuilder(120, false));
+          r(new MelodyBuilder(0, false));
         case "null":
           r(null);
         default:
           j(new Error('Module "midi-parser-js" not installed'));
       }
     }
-    import("midi-parser-js").then(
-      (v) => libgot(v.default),
-      (c) => {
-        if (typeof window === "object" && !!window.MidiParser) {
-          libgot(window.MidiParser);
-        } else nogot();
+    async function checkWebLib() {
+      if (typeof window === "object" && !!window.MidiParser) {
+        return window.MidiParser;
       }
-    );
+      throw null;
+    }
+    async function checkNoteLib() {
+      const lib = await import("midi-parser-js");
+      return lib.default;
+    }
+    checkWebLib().then(libgot).catch(checkNoteLib).then(libgot).catch(nogot);
   });
 }
 
