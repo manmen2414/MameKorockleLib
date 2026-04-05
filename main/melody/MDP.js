@@ -1,4 +1,4 @@
-import { Melody, Note, NOTE_LENGTHS, NOTE_SCALES } from "./melody";
+import { Melody, Note, NOTE_LENGTHS, NOTE_SCALES } from "./melody.js";
 
 class MDP {
   /**
