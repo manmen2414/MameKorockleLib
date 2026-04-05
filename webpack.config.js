@@ -1,16 +1,34 @@
 const path = require("path");
+const webpack = require("webpack");
 
-module.exports = {
-  // mode: "production",
+/**
+ * @param {"web"|"node"} webOrNode
+ */
+const genConfig = (webOrNode) => ({
   mode: "production",
-  entry: "./main/web.js", // 入力ファイル
+  target: `${webOrNode}`,
+  entry: `./main/${webOrNode}.js`,
   output: {
     path: path.resolve(__dirname, "dist"),
-    filename: "web.js", // 出力される単一ファイル名
+    filename: `korockle.${webOrNode}.js`,
     library: {
-      name: "kLib", // ブラウザで <script> 読み込みした時のグローバル変数名
-      type: "umd", // UMD形式（CommonJS, AMD, ブラウザ等、どこでも動く形式）
+      name: "kLib",
+      type: "umd",
     },
-    globalObject: "this", // Node.jsとブラウザ両対応のため
+    globalObject: "this",
   },
+  plugins: [
+    new webpack.BannerPlugin({
+      banner: `Mameeenn Korockle Library | MIT License \nhttps://github.com/manmen2414/MameKorockleLib`,
+    }),
+  ],
+});
+
+const webConfig = {
+  ...genConfig("web"),
+  externals: ["midi-parser-js"],
 };
+
+const nodeConfig = genConfig("node");
+
+module.exports = [webConfig, nodeConfig];
