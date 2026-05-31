@@ -1,3 +1,4 @@
+/// <reference path="../webhid.d.ts" />
 //@ts-check
 import { getKorockle } from "./get.js";
 import * as util from "./util.js";
@@ -13,33 +14,30 @@ class Korockle {
   hid = null;
   /**@type {number} */
   commandSequenceNumber = 0;
-  /**@type {number[][]} */
-  __data = [];
-  /**@type {EventTarget} */
-  __event;
+  /**@type {((report:number[])=>boolean)[]} @returns If the function returns true, the function is deleted from this list. */
+  waitingReportListeners = [];
+
   /**@param {HIDDevice} hid  */
   constructor(hid) {
     this.hid = hid;
     this.hid.addEventListener("inputreport", (event) => {
-      //@ts-ignore
-      this.__inputreport(event);
+      this._inputreport(event);
     });
-    this.__event = new EventTarget();
   }
   static async get() {
     const kHid = await getKorockle();
     if (!kHid) return null;
     return new Korockle(kHid);
   }
-  async execute() {
-    await this.sendCommand(COMMANDID.executeProgram);
+  execute() {
+    return this.sendCommand(COMMANDID.executeProgram);
   }
   /** `execute`と同じ */
-  async runProgram() {
-    await this.execute();
+  runProgram() {
+    return this.execute();
   }
-  async stopProgram() {
-    await this.sendCommand(COMMANDID.stopProgram);
+  stopProgram() {
+    return this.sendCommand(COMMANDID.stopProgram);
   }
   /**@param {number[]} program */
   async writeProgram(program) {
@@ -48,7 +46,8 @@ class Korockle {
       util.convertToDeviceEndian(program.length),
     );
     const longData = new LongDataWriter(this, program);
-    return await longData.send();
+    await longData.send();
+    return this.readData(COMMANDID.writeProgram);
   }
   /**@param {number[]} melody */
   async writeMelody(melody) {
@@ -57,7 +56,8 @@ class Korockle {
       util.convertToDeviceEndian(melody.length),
     );
     const longData = new LongDataWriter(this, melody);
-    return await longData.send();
+    await longData.send();
+    return this.readData(COMMANDID.writeMelody);
   }
   /**
    * @param {number} reportId
@@ -83,30 +83,26 @@ class Korockle {
    */
   async sendCommand(commandId, data = [], exceptLongData = false) {
     this.commandSequenceNumber = toUint8(this.commandSequenceNumber + 1);
-    const read = this.readData(this.commandSequenceNumber, exceptLongData);
+    const read = (exceptLongData ? this.readLongData : this.readData).call(
+      this,
+      this.commandSequenceNumber,
+    );
     await this.sendData(commandId, this.commandSequenceNumber, data);
     return await read;
   }
   async getInfoRaw() {
     if (!this.hid) throw new Error("HID not readied");
     const data = await this.sendCommand(COMMANDID.getInfo, []);
-    if (!data) return null;
     return data.slice(2);
   }
   async readProgram() {
     if (!this.hid) throw new Error("HID not readied");
-    const data = await this.sendCommand(COMMANDID.readProgram, [], true).catch(
-      () => null,
-    );
-    if (!data) return null;
+    const data = await this.sendCommand(COMMANDID.readProgram, [], true);
     return data.slice(2);
   }
   async readMelody() {
     if (!this.hid) throw new Error("HID not readied");
-    const data = await this.sendCommand(COMMANDID.readMelody, [], true).catch(
-      () => null,
-    );
-    if (!data) return null;
+    const data = await this.sendCommand(COMMANDID.readMelody, [], true);
     return data.slice(2);
   }
   async getInfo() {
@@ -117,28 +113,28 @@ class Korockle {
   /**
    * @param {Color} color
    */
-  async led(color = new Color(0, 0, 0)) {
+  led(color = new Color(0, 0, 0)) {
     if (color.red === 0 && color.blue === 0 && color.green === 0) {
-      await this.sendCommand(COMMANDID.action, [35, 0, 0, 0, 0]);
+      return this.sendCommand(COMMANDID.action, [35, 0, 0, 0, 0]);
     } else {
       const constColor = color.constColor();
       const argment = [6, 0, color.red, color.green, color.blue];
       if (constColor !== 0) argment[0] = constColor + 3;
-      await this.sendCommand(COMMANDID.action, argment);
+      return this.sendCommand(COMMANDID.action, argment);
     }
   }
   /**
    * @param {1|2|3} id
    */
-  async sound(id) {
-    await this.sendCommand(COMMANDID.action, [35 + id, 0]);
+  sound(id) {
+    return this.sendCommand(COMMANDID.action, [35 + id, 0]);
   }
   /**
    * @param {number} power 0でoff
    */
-  async usb(power) {
+  usb(power) {
     const value = power === 0 ? 140 : 138;
-    await this.sendCommand(COMMANDID.action, [value, 0, power]);
+    return this.sendCommand(COMMANDID.action, [value, 0, power]);
   }
   async getVersion() {
     return (await this.sendCommand(COMMANDID.getVersion))[2];
@@ -153,24 +149,25 @@ class Korockle {
    * @param {"once" | "loop" | "stop"} type
    * @param {number} index
    */
-  async melody(type, index = 0) {
+  melody(type, index = 0) {
     switch (type) {
       case "once":
-        await this.sendCommand(COMMANDID.playMelody, [index + 1]);
-        break;
+        return this.sendCommand(COMMANDID.playMelody, [index + 1]);
       case "loop":
-        await this.sendCommand(COMMANDID.action, [40, 0]);
-        break;
+        return this.sendCommand(COMMANDID.action, [40, 0]);
       case "stop":
-        await this.sendCommand(COMMANDID.stopMeloay);
-        break;
+        return this.sendCommand(COMMANDID.stopMeloay);
+      default:
+        throw new TypeError(
+          `${type} is an invalid value, Needs "once"|"loop"|"stop"`,
+        );
     }
   }
   /**
    * @param {number | Date} hour_date
    * @param {number} _minute
    */
-  async setTime(hour_date, _minute = -1) {
+  setTime(hour_date, _minute = -1) {
     /**@type {number} */
     let hour;
     /**@type {number} */
@@ -182,7 +179,7 @@ class Korockle {
       hour = hour_date;
       minute = _minute;
     }
-    await this.sendCommand(COMMANDID.setTimeOrAlerm, [
+    return this.sendCommand(COMMANDID.setTimeOrAlerm, [
       1,
       minute,
       hour,
@@ -193,7 +190,7 @@ class Korockle {
    * @param {number | Date} hour_date
    * @param {number} _minute
    */
-  async setAlerm(hour_date, _minute = -1) {
+  setAlerm(hour_date, _minute = -1) {
     /**@type {number} */
     let hour;
     /**@type {number} */
@@ -205,7 +202,7 @@ class Korockle {
       hour = hour_date;
       minute = _minute;
     }
-    await this.sendCommand(COMMANDID.setTimeOrAlerm, [
+    return this.sendCommand(COMMANDID.setTimeOrAlerm, [
       ...THREE0,
       1,
       minute,
@@ -213,7 +210,17 @@ class Korockle {
     ]);
   }
   /**
-   * @param reservation 予約モード: 時刻の秒が0秒になるまで待機し、なったら書き込む
+   * @param {boolean} reservation 予約モード: 時刻の秒が0秒になるまで待機し、なったら書き込む
+   */
+  /**
+   * @overload
+   * @param {true} reservation
+   * @returns {Promise<undefined>}
+   */
+  /**
+   * @overload
+   * @param {false|undefined} reservation
+   * @returns {Promise<number[]>}
    */
   async setTimeNow(reservation = false) {
     if (reservation) {
@@ -224,67 +231,87 @@ class Korockle {
           this.setTime(date);
           clearInterval(id);
         }
-      }, 50);
+      });
     } else {
-      await this.setTime(new Date());
+      return this.setTime(new Date());
     }
   }
   /**@param {HIDInputReportEvent} event  */
-  __inputreport(event) {
+  _inputreport(event) {
     if (!this.hid) return;
     if (event.device.productId !== this.hid.productId) return;
     if (event.device.vendorId !== this.hid.vendorId) return;
 
-    this.__data.push(util.dataViewToArray(event.data));
-    if (this.__data.length > 20) this.__data.shift();
-    this.__event.dispatchEvent(new Event("data"));
+    const report = util.dataViewToArray(event.data);
+
+    this.waitingReportListeners.filter((listener) => {
+      try {
+        return !listener(report);
+      } finally {
+        return true;
+      }
+    });
   }
   /**
-   * @param {boolean} isLong
-   * @param {number} sequenceId
+   * @param {number} exceptedSequenceId
    * @param {number} timeout
    * @returns {Promise<number[]>}
    */
-  readData(sequenceId, isLong = false, timeout = 2000) {
-    let listener = () => {};
-    /**@type {Promise<number[]>} */
-    const reader = Promise.race([
-      new Promise((r) => {
-        if (!isLong)
-          listener = () => {
-            const last = this.__data[this.__data.length - 1];
-            if (last[1] === sequenceId) r(last);
-          };
-        else {
-          /**@type {number[]} */
-          const ret = [];
-          let segmentCount = 0;
-          listener = () => {
-            const last = this.__data[this.__data.length - 1];
-            if (last[0] === COMMANDID.dataSegment) {
-              ret.push(...last.slice(2));
-              segmentCount++;
-              if (last[1] > 0x7f)
-                // データ終了時に、コロックルの想定している個数にデータを切り抜く
-                r(ret.slice(0, (segmentCount - 1) * 62 + (last[1] & 0x7f) + 2));
-            } else if (
-              last[0] === 240 &&
-              ret.length === 0 &&
-              last[1] === sequenceId
-            ) {
-              const dataLength = last[2];
-              ret.push(last[0], dataLength);
-            }
-          };
-        }
-        this.__event.addEventListener("data", listener);
+  readData(exceptedSequenceId = -1, timeout = 100) {
+    const mainTask = new Promise((rs) =>
+      this.waitingReportListeners.push((report) => {
+        const sequenceId = report[1];
+        if (exceptedSequenceId !== -1 && exceptedSequenceId !== sequenceId)
+          return false;
+        rs(report);
+        return true;
       }),
-      new Promise((r, j) =>
-        setTimeout(() => j(new Error("Data Timeouted")), timeout),
+    );
+    const timeoutTask = new Promise((rs, rj) =>
+      setTimeout(() => rj(new Error("The reception timed out")), timeout),
+    );
+    return Promise.race([mainTask, timeoutTask]);
+  }
+  /**
+   * `[240, セグメントID, ...データ]`を返す。
+   * @returns {Promise<number[]>}
+   */
+  readLongData(exceptedSequenceId = -1, overallTimeout = 300) {
+    /**@type {number[]} */
+    const result = [];
+    const mainTask = new Promise((rs) =>
+      this.waitingReportListeners.push((report) => {
+        const isHeaderChunk = report[0] === 240;
+        // isHeaderChunk かつ result空 ならば シーケンスID
+        // isHeaderChunk かつ result空 でなければ 0 (送信終了ヘッダー)
+        // isHeaderChunk でないなら 最終チャンクか(1bit)とチャンク内データ長(7bit)
+        const metadata = report[1];
+        if (isHeaderChunk && exceptedSequenceId === metadata) {
+          // 開始ヘッダーチャンク
+          result.push(240, metadata);
+          // 終了ヘッダーチャンクに対してやることはない(データ内の値で終了はわかる)
+        } else if (!isHeaderChunk) {
+          // データチャンク
+          const isLastDataChunk = (metadata & 0b1000_0000) === 128;
+          const detaLength = metadata & 0b0111_1111;
+          // メタデータを除いたデータ範囲を切り抜く
+          result.push(...report.slice(2, detaLength + 2));
+          if (isLastDataChunk) {
+            // 事前に必要なところだけ切り抜いているため、最後の一工夫は必要ない
+            rs(result);
+            return true;
+          }
+        }
+        return false;
+      }),
+    );
+    const timeoutTask = new Promise((rs, rj) =>
+      setTimeout(
+        () => rj(new Error("The reception timed out")),
+        overallTimeout,
       ),
-    ]);
-    reader.finally(() => this.__event.removeEventListener("data", listener));
-    return reader;
+    );
+    return Promise.race([mainTask, timeoutTask]);
   }
 }
 export { Korockle };
