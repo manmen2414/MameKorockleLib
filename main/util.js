@@ -75,6 +75,34 @@ function indexOf(array, item, isnotExistThrow = true) {
   return n;
 }
 
+/**
+ * @template T
+ * @param {Promise<T>} taskPromise
+ * @param {number} timeoutMs
+ * @param {string} timeoutMessage
+ * @returns {Promise<T>}
+ */
+async function raceWithTimeout(
+  taskPromise,
+  timeoutMs,
+  timeoutMessage = "Timed out",
+) {
+  /**@type {number|NodeJS.Timeout} */
+  let timerId = -1;
+
+  const timeoutTask = new Promise((_, rj) => {
+    timerId = setTimeout(() => {
+      rj(new Error(timeoutMessage));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([taskPromise, timeoutTask]);
+  } finally {
+    clearTimeout(timerId);
+  }
+}
+
 export {
   checkUint8,
   toUint8,
@@ -83,4 +111,5 @@ export {
   dataViewToArray,
   convertToDeviceEndian,
   indexOf,
+  raceWithTimeout,
 };

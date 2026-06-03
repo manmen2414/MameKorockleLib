@@ -255,9 +255,9 @@ class Korockle {
   /**
    * @param {number} exceptedSequenceId
    * @param {number} timeout
-   * @returns {Promise<number[]>}
    */
   readData(exceptedSequenceId = -1, timeout = 100) {
+    /**@type {Promise<number[]>} */
     const mainTask = new Promise((rs) =>
       this.waitingReportListeners.push((report) => {
         const sequenceId = report[1];
@@ -267,18 +267,15 @@ class Korockle {
         return true;
       }),
     );
-    const timeoutTask = new Promise((rs, rj) =>
-      setTimeout(() => rj(new Error("The reception timed out")), timeout),
-    );
-    return Promise.race([mainTask, timeoutTask]);
+    return util.raceWithTimeout(mainTask, timeout, "The response timed out");
   }
   /**
    * `[240, セグメントID, ...データ]`を返す。
-   * @returns {Promise<number[]>}
    */
   readLongData(exceptedSequenceId = -1, overallTimeout = 300) {
     /**@type {number[]} */
     const result = [];
+    /**@type {Promise<number[]>} */
     const mainTask = new Promise((rs) =>
       this.waitingReportListeners.push((report) => {
         const isHeaderChunk = report[0] === 240;
@@ -305,13 +302,11 @@ class Korockle {
         return false;
       }),
     );
-    const timeoutTask = new Promise((rs, rj) =>
-      setTimeout(
-        () => rj(new Error("The reception timed out")),
-        overallTimeout,
-      ),
+    return util.raceWithTimeout(
+      mainTask,
+      overallTimeout,
+      "The response timed out",
     );
-    return Promise.race([mainTask, timeoutTask]);
   }
 }
 export { Korockle };
