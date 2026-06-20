@@ -6,5 +6,7 @@ dist/
 desktop.ini
 testcode*
 
+main/
+
 # botとかサーバーのことを考えアップロードしたらまずい可能性があるので
 web_network_client/
