@@ -31,3 +31,5 @@ export class NodeHidDevice implements GlobalHidDevice {
     this.device?.close();
   }
 }
+
+export * from "../common";

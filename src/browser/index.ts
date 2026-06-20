@@ -27,3 +27,5 @@ export class BrowserHidDevice implements GlobalHidDevice {
     await this.device.close();
   }
 }
+
+export * from "../common";
