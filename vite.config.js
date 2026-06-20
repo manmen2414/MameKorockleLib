@@ -1,7 +1,9 @@
 import { defineConfig } from "vite";
 import { resolve } from "path";
+import dts from "vite-plugin-dts";
 
 export default defineConfig({
+  plugins: [dts({})],
   build: {
     // 1. 共通のビルド出力先
     outDir: "dist",
@@ -15,8 +17,10 @@ export default defineConfig({
       // 出力するフォーマットを指定（ESモジュール と CommonJS）
       formats: ["es", "cjs"],
       // 拡張子を除いたファイル名のベース（[name] に browser や node が入る）
-      fileName: (format, entryName) =>
-        `${entryName}.${format === "es" ? "js" : "cjs"}`,
+      fileName: (format, entryName) => {
+        const ext = format === "es" ? "js" : "cjs";
+        return `${entryName}/index.${ext}`; // 例: "browser/index.js" となる
+      },
     },
 
     // 3. Rollup固有の細かい制御（ライブラリの除外設定）
