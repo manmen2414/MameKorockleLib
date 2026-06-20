@@ -1,5 +1,8 @@
 <h1 align="center">Mameeenn Korockle Library</h1>
 
+## 警告
+`src/`は作成中です。利用できません。
+
 ## コロックルってなんやねん
 https://www.topman.co.jp/ky/download/Korockle/6530-010.html
 https://www.topman.co.jp/ky/download/Korockle/itm/itm_info/product-introduction.html
