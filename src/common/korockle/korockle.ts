@@ -64,20 +64,20 @@ class Korockle {
     return this.sendCommandStatus(COMMANDID.stopProgram);
   }
   async writeProgram(program: number[]) {
-    await this.sendCommand(
+    await this.sendCommandStatus(
       COMMANDID.writeProgram,
       util.convertToLittleEndianBytes(program.length),
     );
     const longData = new LongDataWriter(this, program);
-    await longData.send();
+    return longData.send();
   }
   async writeMelody(melody: number[]) {
-    await this.sendCommand(
+    await this.sendCommandStatus(
       COMMANDID.writeMelody,
       util.convertToLittleEndianBytes(melody.length),
     );
     const longData = new LongDataWriter(this, melody);
-    await longData.send();
+    return longData.send();
   }
 
   async getRawSensorStatus() {

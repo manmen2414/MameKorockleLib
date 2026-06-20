@@ -14,7 +14,7 @@ export class LongDataWriter {
     this.korockle = korockle;
     this.data = data;
   }
-  async send() {
+  async send(): Promise<boolean> {
     const sendData = [];
     const remainingDataLength = this.data.length - this.offset;
     const reportId =
@@ -34,7 +34,12 @@ export class LongDataWriter {
     // TODO:10セグメントごと、またはデータが終了した場合にレスポンスを待つ
     await this.korockle.sendData(COMMANDID.dataSegment, reportId, sendData);
     if (!(this.offset >= this.data.length)) {
-      await this.send();
+      return this.send();
+    } else {
+      return this.korockle
+        .readData()
+        .then(() => true)
+        .catch(() => false);
     }
   }
 }
