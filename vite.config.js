@@ -9,8 +9,8 @@ export default defineConfig({
     // 2. 複数のエントリーポイントを定義（出し分け）
     lib: {
       entry: {
-        browser: resolve(__dirname, "src/browser.ts"),
-        node: resolve(__dirname, "src/node.ts"),
+        browser: resolve(__dirname, "src/browser/index.ts"),
+        node: resolve(__dirname, "src/node/index.ts"),
       },
       // 出力するフォーマットを指定（ESモジュール と CommonJS）
       formats: ["es", "cjs"],
