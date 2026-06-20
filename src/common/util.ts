@@ -1,3 +1,8 @@
+const sharedUint8Array = new Uint8Array(1);
+export function toUint8(value: number) {
+  sharedUint8Array[0] = value;
+  return sharedUint8Array[0];
+}
 export function dataViewToArray(dataView: DataView): number[] {
   return Array.from(
     new Uint8Array(dataView.buffer, dataView.byteOffset, dataView.byteLength),
