@@ -1,4 +1,5 @@
 import { GlobalHidDevice } from "../common/types";
+import { HIDDevice } from "./webhid";
 
 export class BrowserHidDevice implements GlobalHidDevice {
   private device: HIDDevice; // ブラウザ標準の型
