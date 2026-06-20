@@ -1,5 +1,5 @@
-export const NORMAL_KOROCKLE_VENDOR_ID = 0x0c45;
-export const NORMAL_KOROCKLE_PRODUCT_ID = 0x7044;
+export const KOROCKLE_VENDOR_ID = 0x0c45;
+export const KOROCKLE_PRODUCT_ID = 0x7044;
 
 export const COMMANDID = {
   setTimeOrAlerm: 101,
