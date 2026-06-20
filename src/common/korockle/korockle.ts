@@ -9,40 +9,11 @@ class Korockle {
   commandSequenceNumber: number = 0;
   waitingReportListeners: ((report: number[]) => boolean)[] = [];
 
-  /**@param {GlobalHidDevice} hid  */
   constructor(hid: GlobalHidDevice) {
     this.hid = hid;
     this.hid.onData((event) => {
       this._inputreport(event);
     });
-  }
-  execute() {
-    return this.sendCommand(COMMANDID.executeProgram);
-  }
-  /** The alias of `Korockle.execute()` */
-  runProgram() {
-    return this.execute();
-  }
-  stopProgram() {
-    return this.sendCommand(COMMANDID.stopProgram);
-  }
-  async writeProgram(program: number[]) {
-    await this.sendCommand(
-      COMMANDID.writeProgram,
-      util.convertToLittleEndianBytes(program.length),
-    );
-    const longData = new LongDataWriter(this, program);
-    await longData.send();
-    return this.readData(COMMANDID.writeProgram);
-  }
-  async writeMelody(melody: number[]) {
-    await this.sendCommand(
-      COMMANDID.writeMelody,
-      util.convertToLittleEndianBytes(melody.length),
-    );
-    const longData = new LongDataWriter(this, melody);
-    await longData.send();
-    return this.readData(COMMANDID.writeMelody);
   }
   sendData(
     reportId: number,
@@ -60,7 +31,11 @@ class Korockle {
       Uint8Array.from([reportId, commandId, ...data]),
     );
   }
-  async sendCommand(
+  /** @deprecated Please use `Korockle.sendCommandWithResult()` instead. */
+  sendCommand(...args: Parameters<Korockle["sendCommandWithResult"]>) {
+    return this.sendCommandWithResult(...args);
+  }
+  async sendCommandWithResult(
     commandId: number,
     data: number[] = [],
     exceptLongData: boolean = false,
@@ -73,10 +48,46 @@ class Korockle {
     await this.sendData(commandId, this.commandSequenceNumber, data);
     return await read;
   }
-  async getInfoRaw() {
+  async sendCommandStatus(...args: Parameters<Korockle["sendCommand"]>) {
+    return await this.sendCommandWithResult(...args)
+      .then(() => true)
+      .catch(() => false);
+  }
+  /** @deprecated Please use `Korockle.runProgram()` instead. */
+  execute() {
+    return this.runProgram();
+  }
+  runProgram() {
+    return this.sendCommandStatus(COMMANDID.executeProgram);
+  }
+  stopProgram() {
+    return this.sendCommandStatus(COMMANDID.stopProgram);
+  }
+  async writeProgram(program: number[]) {
+    await this.sendCommand(
+      COMMANDID.writeProgram,
+      util.convertToLittleEndianBytes(program.length),
+    );
+    const longData = new LongDataWriter(this, program);
+    await longData.send();
+  }
+  async writeMelody(melody: number[]) {
+    await this.sendCommand(
+      COMMANDID.writeMelody,
+      util.convertToLittleEndianBytes(melody.length),
+    );
+    const longData = new LongDataWriter(this, melody);
+    await longData.send();
+  }
+
+  async getRawSensorStatus() {
     if (!this.hid) throw new Error("HID not readied");
-    const data = await this.sendCommand(COMMANDID.getInfo, []);
+    const data = await this.sendCommand(COMMANDID.getSensorStatus, []);
     return data.slice(2);
+  }
+  /** @deprecated Please use `Korockle.getRawSensorStatus()` instead. */
+  getInfoRaw() {
+    return this.getRawSensorStatus();
   }
   async readProgram() {
     if (!this.hid) throw new Error("HID not readied");
@@ -88,8 +99,9 @@ class Korockle {
     const data = await this.sendCommand(COMMANDID.readMelody, [], true);
     return data.slice(2);
   }
-  async getInfo() {
-    const data = await this.getInfoRaw();
+
+  async getSensorStatus() {
+    const data = await this.getRawSensorStatus();
     if (!data) return null;
     const [
       _1,
@@ -111,28 +123,26 @@ class Korockle {
       isInputing: !!isInputing,
     };
   }
+  /** @deprecated Please use `Korockle.getSensorStatus()` instead. */
+  getInfo() {
+    return this.getSensorStatus();
+  }
   led(color: Color = new Color(0, 0, 0)) {
     if (color.red === 0 && color.blue === 0 && color.green === 0) {
-      return this.sendCommand(COMMANDID.action, [35, 0, 0, 0, 0]);
+      return this.sendCommandStatus(COMMANDID.action, [35, 0, 0, 0, 0]);
     } else {
       const constColor = color.constColor();
       const argment = [6, 0, color.red, color.green, color.blue];
       if (constColor !== 0) argment[0] = constColor + 3;
-      return this.sendCommand(COMMANDID.action, argment);
+      return this.sendCommandStatus(COMMANDID.action, argment);
     }
   }
-  /**
-   * @param {1|2|3} id
-   */
   sound(id: 1 | 2 | 3) {
-    return this.sendCommand(COMMANDID.action, [35 + id, 0]);
+    return this.sendCommandStatus(COMMANDID.action, [35 + id, 0]);
   }
-  /**
-   * @param {number} power 0でoff
-   */
   usb(power: number) {
     const value = power === 0 ? 140 : 138;
-    return this.sendCommand(COMMANDID.action, [value, 0, power]);
+    return this.sendCommandStatus(COMMANDID.action, [value, 0, power]);
   }
   async getVersion() {
     return (await this.sendCommand(COMMANDID.getVersion))[2];
@@ -143,32 +153,22 @@ class Korockle {
   async getRunningProgramByteIndex() {
     return (await this.sendCommand(COMMANDID.getRunningProgramByteIndex))[2];
   }
-  /**
-   * @param {"once" | "loop" | "stop"} type
-   * @param {number} index
-   */
   melody(type: "once" | "loop" | "stop", index: number = 0) {
     switch (type) {
       case "once":
-        return this.sendCommand(COMMANDID.playMelody, [index + 1]);
+        return this.sendCommandStatus(COMMANDID.playMelody, [index + 1]);
       case "loop":
-        return this.sendCommand(COMMANDID.action, [40, 0]);
+        return this.sendCommandStatus(COMMANDID.action, [40, 0]);
       case "stop":
-        return this.sendCommand(COMMANDID.stopMeloay);
+        return this.sendCommandStatus(COMMANDID.stopMeloay);
       default:
         throw new TypeError(
           `${type} is an invalid value, Needs "once"|"loop"|"stop"`,
         );
     }
   }
-  /**
-   * @param {number | Date} hour_date
-   * @param {number} _minute
-   */
   setTime(hour_date: number | Date, _minute: number = -1) {
-    /**@type {number} */
     let hour: number;
-    /**@type {number} */
     let minute: number;
     if (typeof hour_date !== "number") {
       hour = hour_date.getHours();
@@ -177,7 +177,7 @@ class Korockle {
       hour = hour_date;
       minute = _minute;
     }
-    return this.sendCommand(COMMANDID.setTimeOrAlerm, [
+    return this.sendCommandStatus(COMMANDID.setTimeOrAlerm, [
       1,
       minute,
       hour,
@@ -186,14 +186,8 @@ class Korockle {
       0,
     ]);
   }
-  /**
-   * @param {number | Date} hour_date
-   * @param {number} _minute
-   */
   setAlerm(hour_date: number | Date, _minute: number = -1) {
-    /**@type {number} */
     let hour: number;
-    /**@type {number} */
     let minute: number;
     if (typeof hour_date !== "number") {
       hour = hour_date.getHours();
@@ -202,7 +196,7 @@ class Korockle {
       hour = hour_date;
       minute = _minute;
     }
-    return this.sendCommand(COMMANDID.setTimeOrAlerm, [
+    return this.sendCommandStatus(COMMANDID.setTimeOrAlerm, [
       0,
       0,
       0,
@@ -213,13 +207,12 @@ class Korockle {
   }
 
   async setTimeNow(reservation: true): Promise<undefined>;
-  async setTimeNow(reservation?: false): Promise<number[]>;
+  async setTimeNow(reservation?: false): Promise<boolean>;
   /**
    * @param reservation 予約モード: 時刻の秒が0秒になるまで待機し、なったら書き込む
    */
   async setTimeNow(reservation = false) {
     if (reservation) {
-      //予約モード: 0秒になったら書き込む
       const id = setInterval(() => {
         const date = new Date();
         if (date.getSeconds() === 0) {
