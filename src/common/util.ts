@@ -48,3 +48,6 @@ export async function raceWithTimeout<T>(
     if (timerId !== null) clearTimeout(timerId);
   }
 }
+export const entries = <T extends Record<PropertyKey, any>>(obj: T) => {
+  return Object.entries(obj) as [keyof T, T[keyof T]][];
+};

@@ -79,9 +79,9 @@ export class Color {
       this.green = clampToColorNum(arg2);
       this.blue = clampToColorNum(arg3);
     } else if (typeof arg1 === "number") {
-      const colorsFinded = Object.entries(ConstantColor).find(
-        (v) => v[1] === arg1,
-      );
+      const colorsFinded = util
+        .entries(ConstantColor)
+        .find((v) => v[1] === arg1);
       if (!colorsFinded) throw new Error(`ConstColor ${arg1} is not found`);
       const colorName = colorsFinded[0];
       const color = ConstantColorDefine[colorName];
@@ -99,9 +99,9 @@ export class Color {
   /**@returns If the color isn't included in constant colors, this method returns 0. */
   constColor(): number {
     const rgb = [this.red, this.green, this.blue];
-    const constColor = Object.entries(ConstantColorDefine).find((kv) =>
-      kv[1].every((v, i) => rgb[i] === v),
-    );
+    const constColor = util
+      .entries(ConstantColorDefine)
+      .find((kv) => kv[1].every((v, i) => rgb[i] === v));
     if (!constColor) return 0;
     return ConstantColor[constColor[0]];
   }
