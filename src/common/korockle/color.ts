@@ -54,7 +54,7 @@ export class Color {
   constructor(constColor: number);
   constructor(arg1?: number | string, arg2?: number, arg3?: number) {
     if (typeof arg1 === "string") {
-      const rgbString = arg1;
+      const rgbString = arg1.startsWith("#") ? arg1.slice(1) : arg1;
       for (let i = 0; i < 3; i++) {
         const color = rgbString[i * 2] + rgbString[i * 2 + 1];
         const numMaped = clampToColorNum(parseInt(color, 16) / (0xff / 10));
